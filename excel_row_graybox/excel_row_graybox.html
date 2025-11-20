@@ -80,57 +80,131 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
 
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+    function initOffconnTable(table) {
+        if (!table || table.dataset.offconnBound === "1") return false;
 
-    /* FIND TABLE WITH DYNAMIC CLASS (offconn-1, offconn-2, offconn-3...) */
-    const table = document.querySelector("table[class^='offconn-']");
-    if (!table) return;
+        const headerRow = table.rows[0];
+        if (!headerRow) return false;
 
-    const headerRow = table.rows[0];
-    const headers = Array.from(headerRow.cells).map(cell => cell.textContent.trim());
+        const headers = Array.from(headerRow.cells).map((cell) => cell.textContent.trim());
 
-    const overlay = document.getElementById("offconn-overlay");
-    const detailTable = document.getElementById("offconn-detail-table");
-    const closeBtn = document.getElementById("offconn-close");
+        const overlay = document.getElementById("offconn-overlay");
+        const detailTable = document.getElementById("offconn-detail-table");
+        const closeBtn = document.getElementById("offconn-close");
 
-    closeBtn.addEventListener("click", () => overlay.style.display = "none");
+        // Bind close button once
+        if (closeBtn && !closeBtn.dataset.bound) {
+            closeBtn.addEventListener("click", () => (overlay.style.display = "none"));
+            closeBtn.dataset.bound = "1";
+        }
 
-    table.addEventListener("click", function (e) {
-        const cell = e.target.closest("td");
-        if (!cell) return;
+        // Delegate clicks to table (works for rows added later too)
+        table.addEventListener(
+            "click",
+            function (e) {
+                const cell = e.target.closest("td");
+                if (!cell) return;
 
-        const row = cell.parentElement;
-        if (row.rowIndex === 0) return; // Skip header
+                const row = cell.parentElement;
+                if (!row || row.rowIndex === 0) return; // Skip header
 
-        // Build JSON row object
-        const rowObj = {};
-        Array.from(row.cells).forEach((td, idx) => {
-            rowObj[headers[idx]] = td.textContent.trim();
-        });
+                // Build JSON row object
+                const rowObj = {};
+                Array.from(row.cells).forEach((td, idx) => {
+                    rowObj[headers[idx]] = td.textContent.trim();
+                });
 
-        const clickedField = headers[cell.cellIndex];
+                const clickedField = headers[cell.cellIndex];
 
-        // Populate popup
-        detailTable.innerHTML = "";
-        headers.forEach(header => {
-            const tr = document.createElement("tr");
+                // Populate popup
+                detailTable.innerHTML = "";
+                headers.forEach((header) => {
+                    const tr = document.createElement("tr");
 
-            const keyCell = document.createElement("td");
-            keyCell.textContent = header;
+                    const keyCell = document.createElement("td");
+                    keyCell.textContent = header;
 
-            const valCell = document.createElement("td");
-            valCell.textContent = rowObj[header];
+                    const valCell = document.createElement("td");
+                    valCell.textContent = rowObj[header];
 
-            if (header === clickedField) {
-                tr.style.backgroundColor = "#e0e0e0";
+                    if (header === clickedField) {
+                        tr.style.backgroundColor = "#e0e0e0";
+                    }
+
+                    tr.appendChild(keyCell);
+                    tr.appendChild(valCell);
+                    detailTable.appendChild(tr);
+                });
+
+                overlay.style.display = "flex";
+            },
+            false
+        );
+
+        table.dataset.offconnBound = "1";
+        return true;
+    }
+
+    function tryInitialize() {
+        const table = document.querySelector("table[class^='offconn-']");
+        if (table) {
+            return initOffconnTable(table);
+        }
+        return false;
+    }
+
+    function setupObserver(timeoutMs = 30000) {
+        const observer = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (!(node instanceof Element)) continue;
+
+                    // If the added node itself is the table
+                    if (node.matches && node.matches("table[class^='offconn-']")) {
+                        if (initOffconnTable(node)) {
+                            observer.disconnect();
+                            return;
+                        }
+                    }
+
+                    // Or if the table exists within the added subtree
+                    const found = node.querySelector && node.querySelector("table[class^='offconn-']");
+                    if (found && initOffconnTable(found)) {
+                        observer.disconnect();
+                        return;
+                    }
+                }
             }
-
-            tr.appendChild(keyCell);
-            tr.appendChild(valCell);
-            detailTable.appendChild(tr);
         });
 
-        overlay.style.display = "flex";
-    });
-});
+        observer.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree: true,
+        });
+
+        const timer = setTimeout(() => {
+            observer.disconnect();
+            console.warn("[offconn] Table not found within timeout; stopped observing.");
+        }, timeoutMs);
+
+        // In case it appears right after observing starts
+        if (tryInitialize()) {
+            observer.disconnect();
+            clearTimeout(timer);
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!tryInitialize()) {
+                setupObserver();
+            }
+        });
+    } else {
+        if (!tryInitialize()) {
+            setupObserver();
+        }
+    }
+})();
 </script>

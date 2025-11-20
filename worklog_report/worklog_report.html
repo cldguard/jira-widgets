@@ -1,0 +1,149 @@
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    margin: 10px;
+  }
+  h2 {
+    margin-top: 0;
+  }
+  .header-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header-line h4 {
+    margin: 0;
+  }
+  #top-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .icon-btn {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    border: 1px solid #888;
+    background: #f5f5f5;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .icon-btn:hover {
+    background: #e8e8e8;
+  }
+  #filters {
+    margin-bottom: 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #filters span {
+    font-weight: bold;
+    margin-right: 4px;
+  }
+  #filters label {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  #recalc-btn {
+    margin-left: 12px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid #888;
+    background: #f5f5f5;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  #recalc-btn:hover {
+    background: #e8e8e8;
+  }
+  #status {
+    margin: 5px 0 10px 0;
+    color: #555;
+    font-size: 12px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f0f0f0;
+    text-align: left;
+  }
+  tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+  .nowrap {
+    white-space: nowrap;
+  }
+  .summary-row {
+    font-weight: bold;
+    background-color: #eeeeff; /* summary background */
+  }
+</style>
+
+<div class="header-line">
+  <h4>Jira Worklog Table</h4>
+
+  <div id="top-controls">
+    <button id="copy-btn" class="icon-btn" type="button" title="Copy table HTML to clipboard">⧉</button>
+    <button id="export-btn" class="icon-btn" type="button" title="Export table to CSV">⬇</button>
+  </div>
+
+  <div id="filters">
+    <span>Show worklogs for:</span>
+    <label><input type="radio" name="dateFilter" value="this_week">This week</label>
+    <label><input type="radio" name="dateFilter" value="last_week">Last week</label>
+    <label><input type="radio" name="dateFilter" value="this_month">This month</label>
+    <label><input type="radio" name="dateFilter" value="last_month">Last month</label>
+    <label><input type="radio" name="dateFilter" value="all_time">All</label>
+
+    <span style="margin-left: 12px;">User:</span>
+    <label><input type="radio" name="userFilter" value="all_users" checked>All Users</label>
+    <label><input type="radio" name="userFilter" value="current_user">Current User</label>
+
+    <button id="recalc-btn" type="button">Re-calc</button>
+  </div>
+
+  <div id="status">Loading worklogs...</div>
+</div>
+
+<table id="worklog-table">
+  <thead>
+    <tr>
+      <th>Jira Key</th>
+      <th>Jira Summary</th>
+      <th>Work Date</th>
+      <th>Work Time</th>
+      <th>User</th>
+      <th>Category</th>
+      <th>Work Log Entry</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Rows inserted dynamically -->
+    <tr><td colspan="7">
+      <br><br><br><br><br><br><br><br><br><br><br>
+    </td></tr>
+  </tbody>
+</table>
+
+<script
+  src="/secure/attachment/12300/worklog_report.js"
+  data-filter-id="13304"
+  data-max-results="20">
+</script>

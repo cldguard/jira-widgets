@@ -1,0 +1,136 @@
+<style>
+/* ------------------------------ */
+/* TABLE INTERACTIVITY */
+/* ------------------------------ */
+
+/* Default */
+table[class^='offconn-'] td {
+    cursor: default;
+}
+
+/* Pointer for data rows */
+table[class^='offconn-'] tr:not(:first-child) td {
+    cursor: pointer;
+}
+
+/* Hover highlight */
+table[class^='offconn-'] tr:not(:first-child):hover td {
+    background-color: #f5f5f5;
+}
+
+
+/* ------------------------------ */
+/* GRAYBOX OVERLAY (hidden) */
+/* ------------------------------ */
+#offconn-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.3);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#offconn-box {
+    background-color: #f0f0f0;
+    border: 1px solid #999;
+    border-radius: 4px;
+    padding: 12px 16px 16px 16px;
+    min-width: 260px;
+    max-width: 80%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    position: relative;
+}
+
+#offconn-close {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+#offconn-detail-table td {
+    border-bottom: 1px solid #ccc;
+    padding: 2px 4px;
+}
+
+#offconn-detail-table td:first-child {
+    font-weight: bold;
+    white-space: nowrap;
+}
+</style>
+
+
+<!-- Graybox container -->
+<div id="offconn-overlay">
+    <div id="offconn-box">
+        <span id="offconn-close">×</span>
+        <div style="font-weight:bold; margin-bottom:8px;">Row Details</div>
+        <table id="offconn-detail-table" style="width:100%; border-collapse:collapse;"></table>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* FIND TABLE WITH DYNAMIC CLASS (offconn-1, offconn-2, offconn-3...) */
+    const table = document.querySelector("table[class^='offconn-']");
+    if (!table) return;
+
+    const headerRow = table.rows[0];
+    const headers = Array.from(headerRow.cells).map(cell => cell.textContent.trim());
+
+    const overlay = document.getElementById("offconn-overlay");
+    const detailTable = document.getElementById("offconn-detail-table");
+    const closeBtn = document.getElementById("offconn-close");
+
+    closeBtn.addEventListener("click", () => overlay.style.display = "none");
+
+    table.addEventListener("click", function (e) {
+        const cell = e.target.closest("td");
+        if (!cell) return;
+
+        const row = cell.parentElement;
+        if (row.rowIndex === 0) return; // Skip header
+
+        // Build JSON row object
+        const rowObj = {};
+        Array.from(row.cells).forEach((td, idx) => {
+            rowObj[headers[idx]] = td.textContent.trim();
+        });
+
+        const clickedField = headers[cell.cellIndex];
+
+        // Populate popup
+        detailTable.innerHTML = "";
+        headers.forEach(header => {
+            const tr = document.createElement("tr");
+
+            const keyCell = document.createElement("td");
+            keyCell.textContent = header;
+
+            const valCell = document.createElement("td");
+            valCell.textContent = rowObj[header];
+
+            if (header === clickedField) {
+                tr.style.backgroundColor = "#e0e0e0";
+            }
+
+            tr.appendChild(keyCell);
+            tr.appendChild(valCell);
+            detailTable.appendChild(tr);
+        });
+
+        overlay.style.display = "flex";
+    });
+});
+</script>

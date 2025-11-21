@@ -112,8 +112,9 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
     // Builds a URL based on the clicked field and row object.
     // Returns "" by default. Example: if clickedField === "App"
     // then it returns "https://google.com?" + encodeURIComponent(rowObj[clickedField])
-    function link_builder(rowObj, clickedField) {
+    function link_builder(rowObj) {
         let url = "";
+        const clickedField = rowObj.__clickedField;
         if (clickedField === "App" && rowObj[clickedField]) {
             url = "https://google.com?" + encodeURIComponent(rowObj[clickedField]);
         }
@@ -231,6 +232,7 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
                 });
 
                 const clickedField = headers[cell.cellIndex];
+                rowObj.__clickedField = clickedField;
 
                 // Populate popup
                 detailTable.innerHTML = "";
@@ -243,7 +245,7 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
             const valCell = document.createElement("td");
             if (header === clickedField) {
                 tr.style.backgroundColor = "#e0e0e0";
-                const url = link_builder(rowObj, clickedField);
+                const url = link_builder(rowObj);
                 if (url) {
                     const a = document.createElement("a");
                     a.href = url;

@@ -1,0 +1,16 @@
+{
+  "vp_data": [
+    {
+      "Bob": {
+        "employeeid": "ses0134",
+        "phone": "703-555-1212"
+      }
+    },
+    {
+      "Sarah": {
+        "employeeid": "ses2022",
+        "phone": "619-555-1212"
+      }
+    }
+  ]
+}

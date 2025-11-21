@@ -66,6 +66,29 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
     font-weight: bold;
     white-space: nowrap;
 }
+
+/* Scroll container for detail table to keep within viewport */
+#offconn-scroll {
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow: auto; /* both vertical and horizontal */
+    background: #fff;
+    border: 1px solid #ccc;
+}
+
+/* Toolbar styles */
+#offconn-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+#offconn-copy {
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
 </style>
 
 
@@ -74,13 +97,84 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
     <div id="offconn-box">
         <span id="offconn-close">×</span>
         <div style="font-weight:bold; margin-bottom:8px;">Row Details</div>
-        <table id="offconn-detail-table" style="width:100%; border-collapse:collapse;"></table>
+        <div id="offconn-toolbar">
+            <button id="offconn-copy" type="button" title="Copy table as rich text">Copy</button>
+        </div>
+        <div id="offconn-scroll">
+            <table id="offconn-detail-table" style="width:100%; border-collapse:collapse;"></table>
+        </div>
     </div>
 </div>
 
 
 <script>
 (function () {
+    // Builds a URL based on the clicked field and row object.
+    // Returns "" by default. Example: if clickedField === "App"
+    // then it returns "https://google.com?" + encodeURIComponent(rowObj[clickedField])
+    function link_builder(rowObj, clickedField) {
+        let url = "";
+        if (clickedField === "App" && rowObj[clickedField]) {
+            url = "https://google.com?" + encodeURIComponent(rowObj[clickedField]);
+        }
+        return url;
+    }
+
+    // Copy the detail table as rich HTML to the clipboard (with fallbacks)
+    async function copyTableAsRichText(tableEl) {
+        const html = tableEl.outerHTML;
+        const plain = tableEl.innerText || tableEl.textContent || "";
+        // Preferred path: async clipboard API with HTML support
+        try {
+            if (navigator.clipboard && window.ClipboardItem) {
+                const item = new ClipboardItem({
+                    "text/html": new Blob([html], { type: "text/html" }),
+                    "text/plain": new Blob([plain], { type: "text/plain" })
+                });
+                await navigator.clipboard.write([item]);
+                return true;
+            }
+        } catch (e) {
+            // fall through to other strategies
+        }
+
+        // Fallback: writeText (will copy HTML source as text if HTML type unsupported)
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(html);
+                return true;
+            }
+        } catch (e2) {
+            // fall through to execCommand fallback
+        }
+
+        // Legacy fallback: contenteditable selection + execCommand('copy')
+        const sandbox = document.createElement("div");
+        sandbox.setAttribute("contenteditable", "true");
+        sandbox.style.position = "fixed";
+        sandbox.style.left = "-9999px";
+        sandbox.style.top = "0";
+        sandbox.innerHTML = html;
+        document.body.appendChild(sandbox);
+
+        const range = document.createRange();
+        range.selectNodeContents(sandbox);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        let success = false;
+        try {
+            success = document.execCommand("copy");
+        } catch (e3) {
+            success = false;
+        }
+
+        selection.removeAllRanges();
+        document.body.removeChild(sandbox);
+        return success;
+    }
+
     function initOffconnTable(table) {
         if (!table || table.dataset.offconnBound === "1") return false;
 
@@ -92,11 +186,32 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
         const overlay = document.getElementById("offconn-overlay");
         const detailTable = document.getElementById("offconn-detail-table");
         const closeBtn = document.getElementById("offconn-close");
+        const copyBtn = document.getElementById("offconn-copy");
 
         // Bind close button once
         if (closeBtn && !closeBtn.dataset.bound) {
             closeBtn.addEventListener("click", () => (overlay.style.display = "none"));
             closeBtn.dataset.bound = "1";
+        }
+
+        // Bind copy button once
+        if (copyBtn && !copyBtn.dataset.bound) {
+            copyBtn.addEventListener("click", async () => {
+                const prev = copyBtn.textContent;
+                copyBtn.disabled = true;
+                try {
+                    const ok = await copyTableAsRichText(detailTable);
+                    copyBtn.textContent = ok ? "Copied" : "Copy failed";
+                } catch (e) {
+                    copyBtn.textContent = "Copy failed";
+                } finally {
+                    setTimeout(() => {
+                        copyBtn.textContent = prev;
+                        copyBtn.disabled = false;
+                    }, 1200);
+                }
+            });
+            copyBtn.dataset.bound = "1";
         }
 
         // Delegate clicks to table (works for rows added later too)
@@ -125,12 +240,23 @@ table[class^='offconn-'] tr:not(:first-child):hover td {
                     const keyCell = document.createElement("td");
                     keyCell.textContent = header;
 
-                    const valCell = document.createElement("td");
+            const valCell = document.createElement("td");
+            if (header === clickedField) {
+                tr.style.backgroundColor = "#e0e0e0";
+                const url = link_builder(rowObj, clickedField);
+                if (url) {
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.target = "_blank";
+                    a.rel = "noopener noreferrer";
+                    a.textContent = rowObj[header];
+                    valCell.appendChild(a);
+                } else {
                     valCell.textContent = rowObj[header];
-
-                    if (header === clickedField) {
-                        tr.style.backgroundColor = "#e0e0e0";
-                    }
+                }
+            } else {
+                valCell.textContent = rowObj[header];
+            }
 
                     tr.appendChild(keyCell);
                     tr.appendChild(valCell);
